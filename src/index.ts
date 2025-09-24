@@ -1,203 +1,289 @@
-type Token = string | {
-    type: 'number' | 'chineseNumber';
-    value: number;
-}
+/**
+ * Token 类型：字符串或数字对象
+ */
+type StringToken = string;
+type NumberToken = {
+  type: 'arabic' | 'chinese';
+  value: number;
+};
+type Token = StringToken | NumberToken;
 
 /**
- * 中文数字映射表
+ * 中文数字字符映射表
  */
-const CHINESE_NUMBER_MAP: Record<string, number> = {
-    '零': 0, '〇': 0,
-    '一': 1, '壹': 1,
-    '二': 2, '贰': 2,
-    '三': 3, '叁': 3,
-    '四': 4, '肆': 4,
-    '五': 5, '伍': 5,
-    '六': 6, '陆': 6,
-    '七': 7, '柒': 7,
-    '八': 8, '捌': 8,
-    '九': 9, '玖': 9,
-    '十': 10, '拾': 10,
-    '百': 100, '佰': 100,
-    '千': 1000, '仟': 1000
-};
+const CHINESE_DIGIT_MAP: Record<string, number> = {
+  // 基本数字 0-9
+  零: 0,
+  〇: 0,
+  一: 1,
+  壹: 1,
+  二: 2,
+  贰: 2,
+  三: 3,
+  叁: 3,
+  四: 4,
+  肆: 4,
+  五: 5,
+  伍: 5,
+  六: 6,
+  陆: 6,
+  七: 7,
+  柒: 7,
+  八: 8,
+  捌: 8,
+  九: 9,
+  玖: 9,
+  // 单位
+  十: 10,
+  拾: 10,
+  百: 100,
+  佰: 100,
+  千: 1000,
+  仟: 1000,
+} as const;
+
+/**
+ * 分词用的正则表达式
+ */
+const TOKENIZE_REGEX =
+  /(?<arabic>\d+)|(?<chinese>[零〇一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾百千佰仟]+)/g;
+
+/**
+ * 检查字符串是否为有效的中文数字
+ */
+function isValidChineseNumber(str: string): boolean {
+  if (!str) return false;
+
+  // 单独的单位词不是有效数字
+  if (/^(百|佰|千|仟)+$/.test(str)) return false;
+
+  // 重复单位不是有效数字
+  if (/(百|佰|千|仟){2,}/.test(str)) return false;
+
+  // 所有字符都必须是数字字符
+  return str.split('').every((char) => char in CHINESE_DIGIT_MAP);
+}
 
 /**
  * 将中文数字转换为阿拉伯数字
  * @param chineseNum 中文数字字符串
- * @returns 对应的阿拉伯数字
+ * @returns 对应的阿拉伯数字，如果无法转换则返回 null
  */
-function chineseToNumber(chineseNum: string): number | null {
-    if (chineseNum.length === 0) return 0;
+function parseChineseNumber(chineseNum: string): number | null {
+  if (!chineseNum || !isValidChineseNumber(chineseNum)) {
+    return null;
+  }
 
-    // 处理特殊情况 - 单独的单位词和零
-    if (chineseNum === '零' || chineseNum === '〇') return 0;
-    if (chineseNum === '十' || chineseNum === '拾') return 10;
+  // 处理特殊情况：单独的零和十
+  if (chineseNum === '零' || chineseNum === '〇') return 0;
+  if (chineseNum === '十' || chineseNum === '拾') return 10;
 
-    // 单独的单位词不视为数字
-    if (chineseNum.match(/^(百|佰|千|仟)+$/)) return null;
+  let result = 0;
+  let currentNumber = 0;
 
-    let result = 0;
-    let temp = 0;
+  for (const char of chineseNum) {
+    const value = CHINESE_DIGIT_MAP[char];
 
-    for (let i = 0; i < chineseNum.length; i++) {
-        const char = chineseNum[i];
-        const value = CHINESE_NUMBER_MAP[char];
-
-        if (value === undefined) {
-            // 遇到无法识别的字符，返回 0
-            return 0;
-        }
-
-        if (value >= 10) {
-            // 十、百、千等单位
-            if (temp === 0) {
-                temp = 1; // 处理"十"在开头的情况，如"十二"
-            }
-            result += temp * value;
-            temp = 0;
-        } else {
-            // 基础数字 0-9
-            temp = value;
-        }
+    if (value >= 10) {
+      // 遇到单位（十、百、千）
+      if (currentNumber === 0) {
+        currentNumber = 1; // 处理"十"在开头的情况，如"十二"
+      }
+      result += currentNumber * value;
+      currentNumber = 0;
+    } else {
+      // 遇到基础数字 0-9
+      currentNumber = value;
     }
+  }
 
-    result += temp;
-    return result;
+  return result + currentNumber;
 }
 
 /**
- * 拆分字符串为数组，数组元素为字符串或数字
- * @param str 字符串
- * @returns 数组
+ * 将字符串分词为 Token 数组
+ * @param str 输入字符串
+ * @returns Token 数组
  */
-function preprocess(str: string): Token[] {
-    // 匹配阿拉伯数字和中文数字（包括繁体和简体，限制到千以内）
-    const reg = /(?<arabicNum>\d+)|(?<chineseNum>[零〇一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾百千佰仟]+)/g;
-    const result: Token[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
+function tokenize(str: string): Token[] {
+  const tokens: Token[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
 
-    while ((match = reg.exec(str)) !== null) {
-        // 添加数字前的字符串部分
-        if (match.index > lastIndex) {
-            result.push(str.slice(lastIndex, match.index));
-        }
+  // 重置正则表达式的状态
+  TOKENIZE_REGEX.lastIndex = 0;
 
-        const { arabicNum, chineseNum } = match.groups!;
-
-        if (arabicNum) {
-            result.push({ type: 'number', value: Number(arabicNum) });
-        } else if (chineseNum) {
-            // 分割中文数字，处理重复单位
-            const numValue = chineseToNumber(chineseNum);
-            if (numValue !== null) {
-                result.push({ type: 'chineseNumber', value: numValue });
-            } else {
-                // 无法转换的中文数字，作为普通字符串处理
-                result.push(chineseNum);
-            }
-        }
-        lastIndex = reg.lastIndex;
+  while ((match = TOKENIZE_REGEX.exec(str)) !== null) {
+    // 添加数字前的字符串部分
+    if (match.index > lastIndex) {
+      tokens.push(str.slice(lastIndex, match.index));
     }
 
-    // 添加最后剩余的字符串部分
-    if (lastIndex < str.length) {
-        result.push(str.slice(lastIndex));
+    const { arabic, chinese } = match.groups!;
+
+    if (arabic) {
+      tokens.push({ type: 'arabic', value: Number(arabic) });
+    } else if (chinese) {
+      const numValue = parseChineseNumber(chinese);
+      if (numValue !== null) {
+        tokens.push({ type: 'chinese', value: numValue });
+      } else {
+        // 无法转换的中文数字，作为普通字符串处理
+        tokens.push(chinese);
+      }
     }
 
-    return result;
+    lastIndex = TOKENIZE_REGEX.lastIndex;
+  }
+
+  // 添加最后剩余的字符串部分
+  if (lastIndex < str.length) {
+    tokens.push(str.slice(lastIndex));
+  }
+
+  return tokens;
 }
 
 /**
  * 比较选项
  */
 export interface CompareOptions {
-    /**
-     * 如何处理数字和字符串的比较
-     * - 'numberFirst': 数字优先于字符串
-     * - 'stringFirst': 字符串优先于数字
-     * @default 'numberFirst'
-     */
-    numberStringPolicy?: 'numberFirst' | 'stringFirst';
+  /**
+   * 如何处理数字和字符串的比较
+   * - 'numberFirst': 数字优先于字符串
+   * - 'stringFirst': 字符串优先于数字
+   * @default 'numberFirst'
+   */
+  numberStringPolicy?: 'numberFirst' | 'stringFirst';
 
-    /**
-     * 如何处理中文数字与阿拉伯数字的比较
-     * - 'mixed': 混合比较，按数值大小比较
-     * - 'first': 中文数字优先于阿拉伯数字
-     * - 'last': 阿拉伯数字优先于中文数字
-     * @default 'mixed'
-     */
-    chineseNumberPolicy?: 'mixed' | 'first' | 'last';
+  /**
+   * 如何处理中文数字与阿拉伯数字的比较
+   * - 'mixed': 混合比较，按数值大小比较
+   * - 'first': 中文数字优先于阿拉伯数字
+   * - 'last': 阿拉伯数字优先于中文数字
+   * @default 'mixed'
+   */
+  chineseNumberPolicy?: 'mixed' | 'first' | 'last';
+}
+
+/**
+ * 寻找两个字符串的公共前缀长度
+ */
+function findCommonPrefixLength(str1: string, str2: string): number {
+  const minLength = Math.min(str1.length, str2.length);
+
+  for (let i = 0; i < minLength; i++) {
+    if (str1[i] !== str2[i]) {
+      return i;
+    }
+  }
+
+  return minLength;
+}
+
+/**
+ * 尝试重新分词单一字符串token以匹配多token结构
+ */
+function tryRetokenizeSingle(
+  singleTokens: Token[],
+  multiTokens: Token[],
+): Token[] | null {
+  const singleStr = singleTokens[0] as string;
+  const firstStr = multiTokens[0] as string;
+
+  const commonLength = findCommonPrefixLength(singleStr, firstStr);
+
+  if (commonLength > 0) {
+    const prefix = singleStr.slice(0, commonLength);
+    const suffix = singleStr.slice(commonLength);
+    return suffix ? [prefix, suffix] : [prefix];
+  }
+
+  return null;
 }
 
 /**
  * 启发式重新分词：当一边是单一字符串token，另一边是多个token时，
  * 尝试从单一字符串中提取公共前缀，使两边的分词更一致
- * @param tokensA 第一个字符串的token数组
- * @param tokensB 第二个字符串的token数组
- * @returns 重新分词后的token数组对
  */
-function heuristicRetokenize(tokensA: Token[], tokensB: Token[]): [Token[], Token[]] {
-    // 只在一边是单一字符串token，另一边有多个token时进行启发式分词
-    if (tokensA.length === 1 && typeof tokensA[0] === 'string' && tokensB.length > 1) {
-        const strA = tokensA[0] as string;
-        const firstTokenB = tokensB[0];
+function applyHeuristicTokenization(
+  tokensA: Token[],
+  tokensB: Token[],
+): [Token[], Token[]] {
+  // tokensA 是单一字符串，tokensB 是多个 token
+  if (
+    tokensA.length === 1 &&
+    typeof tokensA[0] === 'string' &&
+    tokensB.length > 1 &&
+    typeof tokensB[0] === 'string'
+  ) {
+    const newTokensA = tryRetokenizeSingle(tokensA, tokensB);
+    if (newTokensA) return [newTokensA, tokensB];
+  }
 
-        if (typeof firstTokenB === 'string') {
-            // 寻找公共前缀
-            let commonPrefixLen = 0;
-            const minLen = Math.min(strA.length, firstTokenB.length);
+  // tokensB 是单一字符串，tokensA 是多个 token
+  if (
+    tokensB.length === 1 &&
+    typeof tokensB[0] === 'string' &&
+    tokensA.length > 1 &&
+    typeof tokensA[0] === 'string'
+  ) {
+    const newTokensB = tryRetokenizeSingle(tokensB, tokensA);
+    if (newTokensB) return [tokensA, newTokensB];
+  }
 
-            for (let i = 0; i < minLen; i++) {
-                if (strA[i] === firstTokenB[i]) {
-                    commonPrefixLen++;
-                } else {
-                    break;
-                }
-            }
+  return [tokensA, tokensB];
+} /**
+ * 比较两个 token
+ */
+function compareTokens(
+  tokenA: Token | undefined,
+  tokenB: Token | undefined,
+  options: Required<CompareOptions>,
+): number {
+  // 处理未定义的情况
+  if (tokenA === undefined && tokenB === undefined) return 0;
+  if (tokenA === undefined) return -1;
+  if (tokenB === undefined) return 1;
 
-            // 如果有公共前缀，重新分词
-            if (commonPrefixLen > 0) {
-                const prefix = strA.slice(0, commonPrefixLen);
-                const suffixA = strA.slice(commonPrefixLen);
+  const isStringA = typeof tokenA === 'string';
+  const isStringB = typeof tokenB === 'string';
 
-                const newTokensA = suffixA ? [prefix, suffixA] : [prefix];
-                return [newTokensA, tokensB];
-            }
-        }
+  // 都是字符串
+  if (isStringA && isStringB) {
+    return (tokenA as string).localeCompare(tokenB as string, 'zh-CN');
+  }
+
+  // 都是数字
+  if (!isStringA && !isStringB) {
+    const numA = tokenA as NumberToken;
+    const numB = tokenB as NumberToken;
+
+    // 处理不同类型数字的比较策略
+    if (options.chineseNumberPolicy !== 'mixed' && numA.type !== numB.type) {
+      if (options.chineseNumberPolicy === 'first') {
+        // 中文数字优先
+        if (numA.type === 'chinese' && numB.type === 'arabic') return -1;
+        if (numA.type === 'arabic' && numB.type === 'chinese') return 1;
+      } else if (options.chineseNumberPolicy === 'last') {
+        // 阿拉伯数字优先
+        if (numA.type === 'arabic' && numB.type === 'chinese') return -1;
+        if (numA.type === 'chinese' && numB.type === 'arabic') return 1;
+      }
     }
 
-    // 反向处理
-    if (tokensB.length === 1 && typeof tokensB[0] === 'string' && tokensA.length > 1) {
-        const strB = tokensB[0] as string;
-        const firstTokenA = tokensA[0];
+    // 按数值大小比较
+    const diff = numA.value - numB.value;
+    return diff === 0 ? 0 : diff > 0 ? 1 : -1;
+  }
 
-        if (typeof firstTokenA === 'string') {
-            // 寻找公共前缀
-            let commonPrefixLen = 0;
-            const minLen = Math.min(strB.length, firstTokenA.length);
+  // 一个是字符串，一个是数字
+  if (isStringA && !isStringB) {
+    return options.numberStringPolicy === 'numberFirst' ? 1 : -1;
+  }
 
-            for (let i = 0; i < minLen; i++) {
-                if (strB[i] === firstTokenA[i]) {
-                    commonPrefixLen++;
-                } else {
-                    break;
-                }
-            }
-
-            // 如果有公共前缀，重新分词
-            if (commonPrefixLen > 0) {
-                const prefix = strB.slice(0, commonPrefixLen);
-                const suffixB = strB.slice(commonPrefixLen);
-
-                const newTokensB = suffixB ? [prefix, suffixB] : [prefix];
-                return [tokensA, newTokensB];
-            }
-        }
-    }
-
-    return [tokensA, tokensB];
+  // tokenA 是数字，tokenB 是字符串
+  return options.numberStringPolicy === 'numberFirst' ? -1 : 1;
 }
 
 /**
@@ -207,62 +293,33 @@ function heuristicRetokenize(tokensA: Token[], tokensB: Token[]): [Token[], Toke
  * @param options 比较选项
  * @returns 比较结果：< 0 表示 a < b，= 0 表示 a = b，> 0 表示 a > b
  */
-export function ziRanCompare(a: string, b: string, options: CompareOptions = {}): number {
-    const { chineseNumberPolicy = 'mixed', numberStringPolicy = 'numberFirst' } = options;
+export function ziRanCompare(
+  a: string,
+  b: string,
+  options: CompareOptions = {},
+): number {
+  // 设置默认选项
+  const finalOptions: Required<CompareOptions> = {
+    chineseNumberPolicy: options.chineseNumberPolicy ?? 'mixed',
+    numberStringPolicy: options.numberStringPolicy ?? 'numberFirst',
+  };
 
-    // 预处理字符串，将其拆分为 token 数组
-    let tokensA = preprocess(a);
-    let tokensB = preprocess(b);
+  // 分词
+  let tokensA = tokenize(a);
+  let tokensB = tokenize(b);
 
-    // 启发式重新分词
-    [tokensA, tokensB] = heuristicRetokenize(tokensA, tokensB);
+  // 应用启发式分词
+  [tokensA, tokensB] = applyHeuristicTokenization(tokensA, tokensB);
 
-    const maxLength = Math.max(tokensA.length, tokensB.length);
+  // 逐个比较 token
+  const maxLength = Math.max(tokensA.length, tokensB.length);
 
-    for (let i = 0; i < maxLength; i++) {
-        const tokenA = tokensA[i];
-        const tokenB = tokensB[i];
-
-        // 如果其中一个字符串已经结束
-        if (tokenA === undefined) return -1;
-        if (tokenB === undefined) return 1;
-
-        // 都是字符串，直接字符串比较
-        if (typeof tokenA === 'string' && typeof tokenB === 'string') {
-            const result = tokenA.localeCompare(tokenB, 'zh-CN');
-            if (result !== 0) return result;
-            continue;
-        }
-
-        // 都是数字类型（包括中文数字和阿拉伯数字）
-        if (typeof tokenA === 'object' && typeof tokenB === 'object') {
-            // 根据策略处理不同类型数字的比较
-            if (chineseNumberPolicy !== 'mixed' && tokenA.type !== tokenB.type) {
-                if (chineseNumberPolicy === 'first') {
-                    // 中文数字优先
-                    if (tokenA.type === 'chineseNumber' && tokenB.type === 'number') return -1;
-                    if (tokenA.type === 'number' && tokenB.type === 'chineseNumber') return 1;
-                } else if (chineseNumberPolicy === 'last') {
-                    // 阿拉伯数字优先
-                    if (tokenA.type === 'number' && tokenB.type === 'chineseNumber') return -1;
-                    if (tokenA.type === 'chineseNumber' && tokenB.type === 'number') return 1;
-                }
-            }
-
-            // 按数值大小比较
-            const diff = tokenA.value - tokenB.value;
-            if (diff !== 0) return diff > 0 ? 1 : -1;
-            continue;
-        }
-
-        // 根据 numberStringPolicy 处理数字和字符串的比较
-        if (typeof tokenA === 'string' && typeof tokenB === 'object') {
-            return numberStringPolicy === 'numberFirst' ? 1 : -1;
-        }
-        if (typeof tokenA === 'object' && typeof tokenB === 'string') {
-            return numberStringPolicy === 'numberFirst' ? -1 : 1;
-        }
+  for (let i = 0; i < maxLength; i++) {
+    const result = compareTokens(tokensA[i], tokensB[i], finalOptions);
+    if (result !== 0) {
+      return result;
     }
+  }
 
-    return 0;
+  return 0;
 }
