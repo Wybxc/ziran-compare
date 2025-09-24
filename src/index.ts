@@ -9,7 +9,7 @@ type Token = string | {
 const CHINESE_NUMBER_MAP: Record<string, number> = {
     '零': 0, '〇': 0,
     '一': 1, '壹': 1,
-    '二': 2, '贰': 2, '两': 2,
+    '二': 2, '贰': 2,
     '三': 3, '叁': 3,
     '四': 4, '肆': 4,
     '五': 5, '伍': 5,
@@ -73,7 +73,7 @@ function chineseToNumber(chineseNum: string): number | null {
  */
 function preprocess(str: string): Token[] {
     // 匹配阿拉伯数字和中文数字（包括繁体和简体，限制到千以内）
-    const reg = /(?<arabicNum>\d+)|(?<chineseNum>[零〇一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾两百千佰仟]+)/g;
+    const reg = /(?<arabicNum>\d+)|(?<chineseNum>[零〇一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾百千佰仟]+)/g;
     const result: Token[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;

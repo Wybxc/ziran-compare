@@ -160,7 +160,6 @@ test('edge cases', () => {
 
   // 特殊的中文数字表示
   expect(ziRanCompare('十', '一十')).toBe(0);  // "十" 和 "一十" 应该相等
-  expect(ziRanCompare('两', '二')).toBe(0);    // "两" 和 "二" 应该相等
 
   // 单独的单位词不视为数字
   expect(ziRanCompare('千', '0')).toBeGreaterThan(0);
