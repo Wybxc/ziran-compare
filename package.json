@@ -1,7 +1,9 @@
 {
   "name": "ziran-compare",
   "version": "1.0.0",
+  "description": "一个轻量、强大、支持中文数字的自然排序库",
   "type": "module",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -12,6 +14,23 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "sort",
+    "natural-sort",
+    "chinese-number",
+    "locale-compare",
+    "typescript"
+  ],
+  "author": "wybxc",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wybxc/ziran-compare.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wybxc/ziran-compare/issues"
+  },
+  "homepage": "https://github.com/wybxc/ziran-compare#readme",
   "scripts": {
     "build": "rslib build",
     "check": "biome check --write",

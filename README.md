@@ -1,5 +1,9 @@
 # ziran-compare
 
+[![npm version](https://badge.fury.io/js/ziran-compare.svg)](https://www.npmjs.com/package/ziran-compare)
+[![CI](https://github.com/wybxc/ziran-compare/actions/workflows/ci.yml/badge.svg)](https://github.com/wybxc/ziran-compare/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 一个轻量、强大、支持中文数字的自然排序库。
 
 `ziran-compare` (自然比较) 是一个为 JavaScript/TypeScript 设计的自然排序库。它能够智能地处理包含阿拉伯数字 (1, 2, 3) 和中文数字 (一, 二, 三, 十, 百) 的字符串，实现更符合人类直觉的排序结果。
