@@ -113,13 +113,19 @@ function tokenize(str: string): Token[] {
   // 重置正则表达式的状态
   TOKENIZE_REGEX.lastIndex = 0;
 
-  while ((match = TOKENIZE_REGEX.exec(str)) !== null) {
+  match = TOKENIZE_REGEX.exec(str);
+  while (match !== null) {
     // 添加数字前的字符串部分
     if (match.index > lastIndex) {
       tokens.push(str.slice(lastIndex, match.index));
     }
 
-    const { arabic, chinese } = match.groups!;
+    const groups = match.groups;
+    if (!groups) {
+      match = TOKENIZE_REGEX.exec(str);
+      continue;
+    }
+    const { arabic, chinese } = groups;
 
     if (arabic) {
       tokens.push({ type: 'arabic', value: Number(arabic) });
@@ -134,6 +140,7 @@ function tokenize(str: string): Token[] {
     }
 
     lastIndex = TOKENIZE_REGEX.lastIndex;
+    match = TOKENIZE_REGEX.exec(str);
   }
 
   // 添加最后剩余的字符串部分
