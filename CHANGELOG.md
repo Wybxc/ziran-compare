@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Wybxc/ziran-compare/compare/v1.0.0...v1.1.0) (2025-09-24)
+
+
+### Features
+
+* 更新发布工作流，改用 bun 进行依赖安装和发布 ([bbeed39](https://github.com/Wybxc/ziran-compare/commit/bbeed39c5add269ce39664ac90cadd7f4fa9aec1))
+
 ## 1.0.0 (2025-09-24)
 
 
