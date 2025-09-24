@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Wybxc/ziran-compare/compare/v1.1.0...v1.1.1) (2025-09-24)
+
+
+### Bug Fixes
+
+* 更新 npm 发布步骤，确保使用正确的环境变量配置 ([e2ed3a8](https://github.com/Wybxc/ziran-compare/commit/e2ed3a866dd847196aaca1612f71918b29ffb1ab))
+
 ## [1.1.0](https://github.com/Wybxc/ziran-compare/compare/v1.0.0...v1.1.0) (2025-09-24)
 
 
