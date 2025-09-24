@@ -1,6 +1,6 @@
 {
   "name": "ziran-compare",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "一个轻量、强大、支持中文数字的自然排序库",
   "type": "module",
   "main": "./dist/index.js",
