@@ -33,6 +33,8 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
       - run: bun install --frozen-lockfile
         if: ${{ steps.release.outputs.release_created }}
+      - run: bun run build
+        if: ${{ steps.release.outputs.release_created }}
       - name: Publish to npm
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
