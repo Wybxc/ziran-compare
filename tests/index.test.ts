@@ -8,7 +8,7 @@ test('basic chinese number conversion', () => {
   expect(ziRanCompare('十', '二十')).toBeLessThan(0);
 
   // 中文数字与阿拉伯数字比较
-  expect(ziRanCompare('一', '1')).toBe(0);  // 混合模式下数值相等
+  expect(ziRanCompare('一', '1')).toBe(0); // 混合模式下数值相等
   expect(ziRanCompare('十', '10')).toBe(0);
   expect(ziRanCompare('二十三', '23')).toBe(0);
 });
@@ -41,12 +41,20 @@ test('chinese number policy options', () => {
   expect(ziRanCompare('一', '1', { chineseNumberPolicy: 'mixed' })).toBe(0);
 
   // first 模式：中文数字优先
-  expect(ziRanCompare('一', '1', { chineseNumberPolicy: 'first' })).toBeLessThan(0);
-  expect(ziRanCompare('1', '一', { chineseNumberPolicy: 'first' })).toBeGreaterThan(0);
+  expect(
+    ziRanCompare('一', '1', { chineseNumberPolicy: 'first' }),
+  ).toBeLessThan(0);
+  expect(
+    ziRanCompare('1', '一', { chineseNumberPolicy: 'first' }),
+  ).toBeGreaterThan(0);
 
   // last 模式：阿拉伯数字优先
-  expect(ziRanCompare('一', '1', { chineseNumberPolicy: 'last' })).toBeGreaterThan(0);
-  expect(ziRanCompare('1', '一', { chineseNumberPolicy: 'last' })).toBeLessThan(0);
+  expect(
+    ziRanCompare('一', '1', { chineseNumberPolicy: 'last' }),
+  ).toBeGreaterThan(0);
+  expect(ziRanCompare('1', '一', { chineseNumberPolicy: 'last' })).toBeLessThan(
+    0,
+  );
 });
 
 test('numbers within thousands range', () => {
@@ -96,7 +104,9 @@ test('mixed numbers in strings', () => {
 
   // 文档编号测试
   expect(ziRanCompare('文档编号一千', '文档编号九百九十九')).toBeGreaterThan(0);
-  expect(ziRanCompare('报告第九千九百九十九号', '报告第10000号')).toBeLessThan(0);
+  expect(ziRanCompare('报告第九千九百九十九号', '报告第10000号')).toBeLessThan(
+    0,
+  );
 });
 
 test('complex mixed scenarios', () => {
@@ -127,29 +137,57 @@ test('numberStringPolicy options', () => {
 
   // 默认情况：numberFirst
   expect(ziRanCompare('a', '1')).toBeGreaterThan(0); // 字符串排在数字后面
-  expect(ziRanCompare('1', 'a')).toBeLessThan(0);    // 数字排在字符串前面
+  expect(ziRanCompare('1', 'a')).toBeLessThan(0); // 数字排在字符串前面
 
   // 显式设置 numberFirst
-  expect(ziRanCompare('a', '1', { numberStringPolicy: 'numberFirst' })).toBeGreaterThan(0);
-  expect(ziRanCompare('1', 'a', { numberStringPolicy: 'numberFirst' })).toBeLessThan(0);
+  expect(
+    ziRanCompare('a', '1', { numberStringPolicy: 'numberFirst' }),
+  ).toBeGreaterThan(0);
+  expect(
+    ziRanCompare('1', 'a', { numberStringPolicy: 'numberFirst' }),
+  ).toBeLessThan(0);
 
   // 设置 stringFirst
-  expect(ziRanCompare('a', '1', { numberStringPolicy: 'stringFirst' })).toBeLessThan(0);
-  expect(ziRanCompare('1', 'a', { numberStringPolicy: 'stringFirst' })).toBeGreaterThan(0);
+  expect(
+    ziRanCompare('a', '1', { numberStringPolicy: 'stringFirst' }),
+  ).toBeLessThan(0);
+  expect(
+    ziRanCompare('1', 'a', { numberStringPolicy: 'stringFirst' }),
+  ).toBeGreaterThan(0);
 
   // 混合场景测试 - 使用能产生一致分词的字符串
-  expect(ziRanCompare('a1', '1a', { numberStringPolicy: 'numberFirst' })).toBeGreaterThan(0); // 'a' vs 1，numberFirst时数字在前
-  expect(ziRanCompare('a1', '1a', { numberStringPolicy: 'stringFirst' })).toBeLessThan(0); // 'a' vs 1，stringFirst时字符串在前
+  expect(
+    ziRanCompare('a1', '1a', { numberStringPolicy: 'numberFirst' }),
+  ).toBeGreaterThan(0); // 'a' vs 1，numberFirst时数字在前
+  expect(
+    ziRanCompare('a1', '1a', { numberStringPolicy: 'stringFirst' }),
+  ).toBeLessThan(0); // 'a' vs 1，stringFirst时字符串在前
 
   // 中文数字与阿拉伯数字比较
-  expect(ziRanCompare('a', '一', { numberStringPolicy: 'numberFirst' })).toBeGreaterThan(0);
-  expect(ziRanCompare('a', '一', { numberStringPolicy: 'stringFirst' })).toBeLessThan(0);
+  expect(
+    ziRanCompare('a', '一', { numberStringPolicy: 'numberFirst' }),
+  ).toBeGreaterThan(0);
+  expect(
+    ziRanCompare('a', '一', { numberStringPolicy: 'stringFirst' }),
+  ).toBeLessThan(0);
 
   // 启发式分词
-  expect(ziRanCompare('文件a', '文件1', { numberStringPolicy: 'numberFirst' })).toBeGreaterThan(0);
-  expect(ziRanCompare('文件a', '文件1', { numberStringPolicy: 'stringFirst' })).toBeLessThan(0);
-  expect(ziRanCompare('文件a文件b', '文件1文件b', { numberStringPolicy: 'numberFirst' })).toBeGreaterThan(0);
-  expect(ziRanCompare('文件a文件b', '文件1文件b', { numberStringPolicy: 'stringFirst' })).toBeLessThan(0);
+  expect(
+    ziRanCompare('文件a', '文件1', { numberStringPolicy: 'numberFirst' }),
+  ).toBeGreaterThan(0);
+  expect(
+    ziRanCompare('文件a', '文件1', { numberStringPolicy: 'stringFirst' }),
+  ).toBeLessThan(0);
+  expect(
+    ziRanCompare('文件a文件b', '文件1文件b', {
+      numberStringPolicy: 'numberFirst',
+    }),
+  ).toBeGreaterThan(0);
+  expect(
+    ziRanCompare('文件a文件b', '文件1文件b', {
+      numberStringPolicy: 'stringFirst',
+    }),
+  ).toBeLessThan(0);
 });
 
 test('edge cases', () => {
@@ -159,7 +197,7 @@ test('edge cases', () => {
   expect(ziRanCompare('零', '0')).toBe(0);
 
   // 特殊的中文数字表示
-  expect(ziRanCompare('十', '一十')).toBe(0);  // "十" 和 "一十" 应该相等
+  expect(ziRanCompare('十', '一十')).toBe(0); // "十" 和 "一十" 应该相等
 
   // 单独的单位词不视为数字
   expect(ziRanCompare('千', '0')).toBeGreaterThan(0);
