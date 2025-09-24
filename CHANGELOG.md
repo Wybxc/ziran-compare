@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/Wybxc/ziran-compare/compare/v1.1.1...v1.1.2) (2025-09-24)
+
+
+### Bug Fixes
+
+* 修复构建步骤，确保在发布时执行构建命令 ([776af08](https://github.com/Wybxc/ziran-compare/commit/776af08db0ac39272c1d76cbe4452a445dfb31ae))
+
 ## [1.1.1](https://github.com/Wybxc/ziran-compare/compare/v1.1.0...v1.1.1) (2025-09-24)
 
 
