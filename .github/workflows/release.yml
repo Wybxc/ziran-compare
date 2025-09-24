@@ -22,19 +22,19 @@ jobs:
         id: release
         with:
           release-type: node
-      # The logic below handles the npm publication:
+      # The logic below handles the bun publication:
       - uses: actions/checkout@v4
         # these if statements ensure that a publication only occurs when
         # a new release is created:
         if: ${{ steps.release.outputs.release_created }}
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v1
         with:
-          node-version: 12
-          registry-url: 'https://registry.npmjs.org'
+          bun-version: latest
         if: ${{ steps.release.outputs.release_created }}
-      - run: npm ci
+      - run: bun install --frozen-lockfile
         if: ${{ steps.release.outputs.release_created }}
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Configure npm registry
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+        if: ${{ steps.release.outputs.release_created }}
+      - run: bun publish --access public
         if: ${{ steps.release.outputs.release_created }}
